@@ -5,12 +5,13 @@ import cookieParser from "cookie-parser";
 import bodyParser from "body-parser";
 import http from "http"
 import router from "./routers";
-
+import db from "./config/db.config";
 
 const app = express();
 
 app.use(cors({
     credentials: true,
+    origin: "*"
 }))
 
 app.use(compression());
