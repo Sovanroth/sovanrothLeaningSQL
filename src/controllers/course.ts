@@ -36,7 +36,7 @@ export const createCourse = async (
   } = body;
 
   const sqlStatement =
-    "INSERT INTO `courses` (courseTitle, courseDescription, category, courseImage, coursePrice, courseResource, active) VALUES (?,?,?,?,?,?,?);"
+    "INSERT INTO `courses` (courseTitle, courseDescription, category, courseImage, coursePrice, courseResource, active) VALUES (?,?,?,?,?,?,?);";
 
   if (courseTitle == null || courseTitle === "") {
     message.courseTitle = "Please input course title!";
@@ -65,7 +65,6 @@ export const createCourse = async (
   if (active == null || active === "") {
     message.courseResource = "Please input course active!";
   }
-
 
   if (Object.keys(message).length > 0) {
     return res.status(401).json({
@@ -121,6 +120,60 @@ export const getAllCourses = async (
     } else {
       const data = { status: res.statusCode, data: row };
       return res.status(200).json(data);
+    }
+  });
+};
+
+export const getOneCourse = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  const id = req.params.id;
+  const sqlStatement = "SELECT * FROM courses WHERE course_id = ?";
+  const param = [id];
+  db.query(sqlStatement, param, (error, row) => {
+    if (error) {
+      res.json({
+        error: true,
+        message: "Something Went Wrong!",
+      });
+    } else {
+      res.json({
+        status: res.statusCode,
+        course: row,
+      });
+    }
+  });
+};
+
+export const deleteCourse = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  const id = req.params.id;
+  const sqlStatement = "DELETE FROM courses WHERE course_id = ?";
+  const param = [id];
+
+  db.query("SELECT * FROM courses WHERE course_id =? ", param, (error, row) => {
+    if (!error) {
+      if (row.length > 0) {
+        db.query(sqlStatement, param, (error) => {
+          if (error) {
+            return res.json({
+              error: true,
+              message: "Something went wrong!",
+            });
+          } else {
+            return res.json({
+              message: "Course Deleted!",
+            });
+          }
+        });
+      }
+    } else {
+      return res.json({
+        message: "Course not found!",
+      });
     }
   });
 };
