@@ -12,7 +12,7 @@ export const createCourse = async (
     courseImage?: string;
     coursePrice?: string;
     courseResource?: string;
-    active?: number;
+    active?: string;
   } = {};
 
   const body = req.body as {
@@ -22,7 +22,7 @@ export const createCourse = async (
     courseImage: string;
     coursePrice: string;
     courseResource: string;
-    active: number;
+    active: string;
   };
 
   const {
@@ -36,7 +36,7 @@ export const createCourse = async (
   } = body;
 
   const sqlStatement =
-    "INSERT INTO `courses` (courseTitle, courseDescription, category, courseImage, coursePrice, courseResource, active) VALUES (?, ?, ?, ?, ?, ?, ?)";
+    "INSERT INTO `courses` (courseTitle, courseDescription, category, courseImage, coursePrice, courseResource, active) VALUES (?,?,?,?,?,?,?);"
 
   if (courseTitle == null || courseTitle === "") {
     message.courseTitle = "Please input course title!";
@@ -62,6 +62,11 @@ export const createCourse = async (
     message.courseResource = "Please input course resource!";
   }
 
+  if (active == null || active === "") {
+    message.courseResource = "Please input course active!";
+  }
+
+
   if (Object.keys(message).length > 0) {
     return res.status(401).json({
       error: true,
@@ -75,6 +80,7 @@ export const createCourse = async (
     courseDescription,
     category,
     courseImage,
+    coursePrice,
     courseResource,
     active,
   ];
@@ -83,7 +89,7 @@ export const createCourse = async (
     if (error) {
       return res.status(500).json({
         error: true,
-        message: "Something went wrong with the database!",
+        message: "Something went wrong",
         details: error,
       });
     } else {
@@ -100,8 +106,21 @@ export const createCourse = async (
         error: false,
         message: "Course Created!",
         course: createdCourse,
-        result,
       });
+    }
+  });
+};
+
+export const getAllCourses = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  db.query("SELECT * FROM courses", (error, row) => {
+    if (error) {
+      return res.send("Something went wrong!");
+    } else {
+      const data = { status: res.statusCode, data: row };
+      return res.status(200).json(data);
     }
   });
 };

@@ -4,9 +4,10 @@ import db from "../config/db.config";
 export const getUsers = async (req: express.Request, res: express.Response) => {
   db.query("SELECT * FROM users", (err, row) => {
     if (err) {
-      return res.send("sadfsdf");
+      return res.send("Something went Wrong");
     } else {
-      return res.status(404).json(row);
+      const data = {"status" : res.statusCode ,'data': row };
+      return res.status(200).json(data);
     }
   });
 };
@@ -58,6 +59,7 @@ export const getOneUser = async (
       });
     } else {
       res.json({
+        status: res.statusCode,
         user: row,
       });
     }
