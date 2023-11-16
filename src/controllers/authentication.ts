@@ -102,17 +102,47 @@ export const Login = async (req: express.Request, res: express.Response) => {
       return;
     }
 
-    if(row.length == 0){
-        res.status(401).json({
-            error: true,
-            message: "Login Failed, User does not existed!"
-        })
+    if (row.length == 0) {
+      res.status(401).json({
+        error: true,
+        message: "Login Failed, User does not existed!",
+      });
     } else {
-        const user = row[0];
-        const userPassword = user.password;
-        const comparePassword = bycript.compareSync(password, userPassword);
-        if (comparePassword) {
-        }
+      const user = row[0];
+      const userPassword = user.password;
+      const comparePassword = bycript.compareSync(password, userPassword);
+      if (comparePassword) {
+      }
+    }
+  });
+};
+
+export const udpateUser = (req: express.Request, res: express.Response) => {
+  const body = req.body as {
+    email: string;
+    password: string;
+    username: string;
+  };
+
+  const { email, username } = body;
+  const password = bycript.hashSync(body.password, 10);
+  const param = [body.email, body.password, body.username];
+
+  const sqlStatement =
+    "UPDATE users SET username = ?, email = ?, password = ? WHERE user_id";
+
+  db.query(sqlStatement, param, (error, row) => {
+    if(error) {
+      return res.json({
+        error: true,
+        message: "Something Went Wrong!"
+      })
+    } else {
+      return res.json({
+        status: res.statusCode,
+        message: "Updated Successfully",
+        user: row,
+      })
     }
   });
 };
