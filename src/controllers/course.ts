@@ -138,9 +138,10 @@ export const getOneCourse = async (
         message: "Something Went Wrong!",
       });
     } else {
+      const course = row.length > 0 ? row[0] : null;
       res.json({
         status: res.statusCode,
-        course: row,
+        course: course,
       });
     }
   });
