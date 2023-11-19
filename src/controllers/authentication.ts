@@ -2,6 +2,7 @@ import express from "express";
 import db from "../config/db.config";
 import bycript from "bcrypt";
 
+
 export const createUser = async (
   req: express.Request,
   res: express.Response

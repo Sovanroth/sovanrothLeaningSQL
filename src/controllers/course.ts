@@ -124,6 +124,35 @@ export const getAllCourses = async (
   });
 };
 
+// `SELECT c.course_id, c.courseTitle, c.courseDescription, c.category, c.courseImage, c.coursePrice, c.courseResource, c.active, JSON_ARRAYAGG(JSON_OBJECT('videos', videos.video_id)) as videos
+// FROM courses c
+// JOIN videos ON c.course_id = videos.course_id
+// GROUP BY c.course_id, c.courseTitle, c.courseDescription, c.category, c.courseImage, c.coursePrice, c.courseResource, c.active;`
+
+// const getAllProducts = (req, res) => {
+
+
+
+
+export const getAllCoursesWithVideo = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  const courseQuery =
+    "SELECT courses.* FROM courses LEFT JOIN videos ON courses.course_id = videos.course_id GROUP BY courses.course_id";
+
+  db.query(courseQuery, (error, row) => {
+    if (error) {
+      return res.send(error);
+    } else {
+      const data = { status: res.statusCode, data: row };
+      return res.status(200).json(data);
+    }
+  });
+};
+
+
+
 export const getOneCourse = async (
   req: express.Request,
   res: express.Response
