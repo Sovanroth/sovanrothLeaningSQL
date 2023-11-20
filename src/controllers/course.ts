@@ -159,11 +159,15 @@ export const getCourseByIdWithVideo = async (
   db.query(courseQuery, [courseId], (error, row) => {
     if (error) {
       console.error(error);
-      return res.status(500).json({ status: 500, message: 'Internal Server Error' });
+      return res
+        .status(500)
+        .json({ status: 500, message: "Internal Server Error" });
     } else {
       // Check if any rows were returned
       if (row.length === 0) {
-        return res.status(404).json({ status: 404, message: 'Course not found' });
+        return res
+          .status(404)
+          .json({ status: 404, message: "Course not found" });
       }
 
       // Parse the JSON string into a JavaScript object
@@ -177,8 +181,6 @@ export const getCourseByIdWithVideo = async (
     }
   });
 };
-
-
 
 // export const getAllCoursesWithVideo = async (
 //   req: express.Request,
@@ -247,6 +249,8 @@ export const deleteCourse = async (
   const id = req.params.id;
   const sqlStatement = "DELETE FROM courses WHERE course_id = ?";
   const param = [id];
+
+  db.query(`DELETE FROM videos WHERE course_id = ${param};`)
 
   db.query("SELECT * FROM courses WHERE course_id =? ", param, (error, row) => {
     if (!error) {
