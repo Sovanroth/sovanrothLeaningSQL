@@ -250,7 +250,7 @@ export const deleteCourse = async (
   const sqlStatement = "DELETE FROM courses WHERE course_id = ?";
   const param = [id];
 
-  db.query(`DELETE FROM videos WHERE course_id = ${param};`)
+  db.query(`DELETE FROM videos WHERE course_id = ${param};`);
 
   db.query("SELECT * FROM courses WHERE course_id =? ", param, (error, row) => {
     if (!error) {
@@ -275,3 +275,123 @@ export const deleteCourse = async (
     }
   });
 };
+
+export const updateCOurse = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  const id = req.params.id;
+  const param = [id];
+
+  const message: {
+    courseTitle?: string;
+    courseDescription?: string;
+    category?: string;
+    courseImage?: string;
+    coursePrice?: string;
+    courseResource?: string;
+    active?: string;
+  } = {};
+
+  const body = req.body as {
+    courseTitle: string;
+    courseDescription: string;
+    category: string;
+    courseImage: string;
+    coursePrice: string;
+    courseResource: string;
+    active: string;
+  };
+
+  const {
+    courseTitle,
+    courseDescription,
+    category,
+    courseImage,
+    coursePrice,
+    courseResource,
+    active,
+  } = body;
+
+  if (courseTitle == null || courseTitle === "") {
+    message.courseTitle = "Please input course title!";
+  }
+
+  if (courseDescription == null || courseDescription === "") {
+    message.courseDescription = "Please input course description!";
+  }
+
+  if (category == null || category === "") {
+    message.category = "Please input course category!";
+  }
+
+  if (courseImage == null || courseImage === "") {
+    message.courseImage = "Please input course image!";
+  }
+
+  if (coursePrice == null || coursePrice === "") {
+    message.coursePrice = "Please input course price!";
+  }
+
+  if (courseResource == null || courseResource === "") {
+    message.courseResource = "Please input course resource!";
+  }
+
+  if (active == null || active === "") {
+    message.courseResource = "Please input course active!";
+  }
+
+  if (Object.keys(message).length > 0) {
+    return res.status(401).json({
+      error: true,
+      message: "Validation error",
+      details: message,
+    });
+  }
+
+  const params = [
+    courseTitle,
+    courseDescription,
+    category,
+    courseImage,
+    coursePrice,
+    courseResource,
+    active,
+  ];
+
+  const sqlStatement = `UPDATE courses
+  SET
+    courseTitle = '${courseTitle}',
+    courseDescription = '${courseDescription}',
+    category = '${category}',
+    courseImage = '${courseImage}',
+    coursePrice = '${coursePrice}',
+    courseResource = '${courseResource}',
+    active = '${active}'
+  WHERE
+    course_id = ${param};`;
+
+  db.query("SELECT * FROM courses WHERE course_id =? ", param, (error, row) => {
+    if (!error) {
+      if (row.length > 0) {
+        db.query(sqlStatement, params, (error) => {
+          if (error) {
+            return res.json({
+              error: true,
+              message: error,
+            });
+          } else {
+            return res.json({
+              message: "Course Updated!",
+            });
+          }
+        });
+      }
+    } else {
+      return res.json({
+        message: "Course not found!",
+      });
+    }
+  });
+};
+
