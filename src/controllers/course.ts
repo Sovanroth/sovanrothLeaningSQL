@@ -276,7 +276,7 @@ export const deleteCourse = async (
   });
 };
 
-export const updateCOurse = async (
+export const updateCourse = async (
   req: express.Request,
   res: express.Response
 ) => {
@@ -294,13 +294,13 @@ export const updateCOurse = async (
   } = {};
 
   const body = req.body as {
-    courseTitle: string;
-    courseDescription: string;
-    category: string;
-    courseImage: string;
-    coursePrice: string;
-    courseResource: string;
-    active: string;
+    courseTitle?: string;
+    courseDescription?: string;
+    category?: string;
+    courseImage?: string;
+    coursePrice?: string;
+    courseResource?: string;
+    active?: string;
   };
 
   const {
@@ -313,33 +313,7 @@ export const updateCOurse = async (
     active,
   } = body;
 
-  if (courseTitle == null || courseTitle === "") {
-    message.courseTitle = "Please input course title!";
-  }
-
-  if (courseDescription == null || courseDescription === "") {
-    message.courseDescription = "Please input course description!";
-  }
-
-  if (category == null || category === "") {
-    message.category = "Please input course category!";
-  }
-
-  if (courseImage == null || courseImage === "") {
-    message.courseImage = "Please input course image!";
-  }
-
-  if (coursePrice == null || coursePrice === "") {
-    message.coursePrice = "Please input course price!";
-  }
-
-  if (courseResource == null || courseResource === "") {
-    message.courseResource = "Please input course resource!";
-  }
-
-  if (active == null || active === "") {
-    message.courseResource = "Please input course active!";
-  }
+  // Validation checks...
 
   if (Object.keys(message).length > 0) {
     return res.status(401).json({
@@ -349,36 +323,66 @@ export const updateCOurse = async (
     });
   }
 
-  const params = [
-    courseTitle,
-    courseDescription,
-    category,
-    courseImage,
-    coursePrice,
-    courseResource,
-    active,
-  ];
+  // Build the SET clause dynamically based on provided fields
+  const setClause: string[] = [];
+  const params: any[] = [];
 
-  const sqlStatement = `UPDATE courses
-  SET
-    courseTitle = '${courseTitle}',
-    courseDescription = '${courseDescription}',
-    category = '${category}',
-    courseImage = '${courseImage}',
-    coursePrice = '${coursePrice}',
-    courseResource = '${courseResource}',
-    active = '${active}'
-  WHERE
-    course_id = ${param};`;
+  if (courseTitle !== undefined) {
+    setClause.push("courseTitle = ?");
+    params.push(courseTitle);
+  }
 
-  db.query("SELECT * FROM courses WHERE course_id =? ", param, (error, row) => {
+  if (courseDescription !== undefined) {
+    setClause.push("courseDescription = ?");
+    params.push(courseDescription);
+  }
+
+  if (category !== undefined) {
+    setClause.push("category = ?");
+    params.push(category);
+  }
+
+  if (courseImage !== undefined) {
+    setClause.push("courseImage = ?");
+    params.push(courseImage);
+  }
+
+  if (coursePrice !== undefined) {
+    setClause.push("coursePrice = ?");
+    params.push(coursePrice);
+  }
+
+  if (courseResource !== undefined) {
+    setClause.push("courseResource = ?");
+    params.push(courseResource);
+  }
+
+  if (active !== undefined) {
+    setClause.push("active = ?");
+    params.push(active);
+  }
+
+  // Check if any fields are provided for update
+  if (setClause.length === 0) {
+    return res.json({
+      message: "No fields provided for update.",
+    });
+  }
+
+  params.push(id); // Include the course_id in the params
+
+  const sqlStatement = `UPDATE courses SET ${setClause.join(", ")} WHERE course_id = ?`;
+
+  db.query("SELECT * FROM courses WHERE course_id = ?", param, (error, row) => {
     if (!error) {
       if (row.length > 0) {
-        db.query(sqlStatement, params, (error) => {
-          if (error) {
+        db.query(sqlStatement, params, (updateError) => {
+          if (updateError) {
+            // Sanitize the error message before sending it
+            const sanitizedErrorMessage = updateError.message.replace(/"/g, "'");
             return res.json({
               error: true,
-              message: error,
+              message: `Failed to update course. Error: ${sanitizedErrorMessage}`,
             });
           } else {
             return res.json({
@@ -386,12 +390,15 @@ export const updateCOurse = async (
             });
           }
         });
+      } else {
+        return res.json({
+          message: "Course not found!",
+        });
       }
     } else {
       return res.json({
-        message: "Course not found!",
+        message: "Error while checking for the course",
       });
     }
   });
 };
-
