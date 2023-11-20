@@ -131,27 +131,91 @@ export const getAllCourses = async (
 
 // const getAllProducts = (req, res) => {
 
-
-
-
-export const getAllCoursesWithVideo = async (
+export const getCourseByIdWithVideo = async (
   req: express.Request,
   res: express.Response
 ) => {
-  const courseQuery =
-    "SELECT courses.* FROM courses LEFT JOIN videos ON courses.course_id = videos.course_id GROUP BY courses.course_id";
+  const courseId = req.params.id; // Assuming the course_id is part of the route parameters
 
-  db.query(courseQuery, (error, row) => {
+  const courseQuery = `
+    SELECT
+      c.course_id,
+      c.courseTitle,
+      c.courseDescription,
+      c.category,
+      c.courseImage,
+      c.coursePrice,
+      c.courseResource,
+      c.active,
+      JSON_ARRAYAGG(JSON_OBJECT('video_id', videos.video_id, 'video_title', videos.video_title, 'video_url', videos.video_url)) as videos
+    FROM
+      courses c
+      JOIN videos ON c.course_id = videos.course_id
+    WHERE
+      c.course_id = ?
+    GROUP BY
+      c.course_id, c.courseTitle, c.courseDescription, c.category, c.courseImage, c.coursePrice, c.courseResource, c.active;`;
+
+  db.query(courseQuery, [courseId], (error, row) => {
     if (error) {
-      return res.send(error);
+      console.error(error);
+      return res.status(500).json({ status: 500, message: 'Internal Server Error' });
     } else {
-      const data = { status: res.statusCode, data: row };
-      return res.status(200).json(data);
+      // Check if any rows were returned
+      if (row.length === 0) {
+        return res.status(404).json({ status: 404, message: 'Course not found' });
+      }
+
+      // Parse the JSON string into a JavaScript object
+      const formattedData = row.map((course: { videos: string }) => ({
+        ...course,
+        videos: JSON.parse(course.videos),
+      }));
+
+      const course = { status: res.statusCode, course: formattedData[0] }; // Assuming there is only one row for a specific course_id
+      return res.status(200).json(course);
     }
   });
 };
 
 
+
+// export const getAllCoursesWithVideo = async (
+//   req: express.Request,
+//   res: express.Response
+// ) => {
+//   const courseQuery = `
+//     SELECT
+//       c.course_id,
+//       c.courseTitle,
+//       c.courseDescription,
+//       c.category,
+//       c.courseImage,
+//       c.coursePrice,
+//       c.courseResource,
+//       c.active,
+//       JSON_ARRAYAGG(JSON_OBJECT('video_id', videos.video_id,'video_title', videos.video_title,  'video_url', videos.video_url)) as videos
+//     FROM
+//       courses c
+//       JOIN videos ON c.course_id = videos.course_id
+//     GROUP BY
+//       c.course_id, c.courseTitle, c.courseDescription, c.category, c.courseImage, c.coursePrice, c.courseResource, c.active;`;
+
+//   db.query(courseQuery, (error, row) => {
+//     if (error) {
+//       return res.send(error);
+//     } else {
+//       // Parse the JSON string into a JavaScript object
+//       const formattedData = row.map((course: { videos: string }) => ({
+//         ...course,
+//         videos: JSON.parse(course.videos),
+//       }));
+
+//       const data = { status: res.statusCode, data: formattedData };
+//       return res.status(200).json(data);
+//     }
+//   });
+// };
 
 export const getOneCourse = async (
   req: express.Request,
