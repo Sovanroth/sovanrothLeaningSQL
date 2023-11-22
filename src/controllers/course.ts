@@ -138,23 +138,23 @@ export const getCourseByIdWithVideo = async (
   const courseId = req.params.id; // Assuming the course_id is part of the route parameters
 
   const courseQuery = `
-    SELECT
-      c.course_id,
-      c.courseTitle,
-      c.courseDescription,
-      c.category,
-      c.courseImage,
-      c.coursePrice,
-      c.courseResource,
-      c.active,
-      JSON_ARRAYAGG(JSON_OBJECT('video_id', videos.video_id, 'video_title', videos.video_title, 'video_url', videos.video_url)) as videos
-    FROM
-      courses c
-      JOIN videos ON c.course_id = videos.course_id
-    WHERE
-      c.course_id = ?
-    GROUP BY
-      c.course_id, c.courseTitle, c.courseDescription, c.category, c.courseImage, c.coursePrice, c.courseResource, c.active;`;
+  SELECT
+    c.course_id,
+    c.courseTitle,
+    c.courseDescription,
+    c.category,
+    c.courseImage,
+    c.coursePrice,
+    c.courseResource,
+    c.active,
+    JSON_ARRAYAGG(JSON_OBJECT('video_id', v.video_id, 'video_title', v.video_title, 'video_url', v.video_url)) as videos
+  FROM
+    courses c
+    LEFT JOIN videos v ON c.course_id = v.course_id
+  WHERE
+    c.course_id = ?
+  GROUP BY
+    c.course_id, c.courseTitle, c.courseDescription, c.category, c.courseImage, c.coursePrice, c.courseResource, c.active;`;
 
   db.query(courseQuery, [courseId], (error, row) => {
     if (error) {
@@ -371,7 +371,9 @@ export const updateCourse = async (
 
   params.push(id); // Include the course_id in the params
 
-  const sqlStatement = `UPDATE courses SET ${setClause.join(", ")} WHERE course_id = ?`;
+  const sqlStatement = `UPDATE courses SET ${setClause.join(
+    ", "
+  )} WHERE course_id = ?`;
 
   db.query("SELECT * FROM courses WHERE course_id = ?", param, (error, row) => {
     if (!error) {
@@ -379,7 +381,10 @@ export const updateCourse = async (
         db.query(sqlStatement, params, (updateError) => {
           if (updateError) {
             // Sanitize the error message before sending it
-            const sanitizedErrorMessage = updateError.message.replace(/"/g, "'");
+            const sanitizedErrorMessage = updateError.message.replace(
+              /"/g,
+              "'"
+            );
             return res.json({
               error: true,
               message: `Failed to update course. Error: ${sanitizedErrorMessage}`,
