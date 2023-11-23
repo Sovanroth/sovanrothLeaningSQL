@@ -60,3 +60,53 @@ export const createVideo = async (
     }
   });
 };
+
+export const deleteVideo = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  const id = req.params.id;
+  const sqlStatement = "DELETE FROM videos WHERE video_id = ?";
+  const param = [id];
+
+  db.query(
+    "SELECT * FROM  videos WHERE video_id = ?",
+    param,
+    (error, result) => {
+      if (!error) {
+        if (result.length > 0) {
+          db.query(sqlStatement, param, (error) => {
+            if (error) {
+              return res.json({
+                error: true,
+                message: "Something went wrong!",
+              });
+            } else {
+              return res.json({
+                message: "Video Deleted!",
+              });
+            }
+          });
+        }
+      } else {
+        return res.json({
+          message: "Course not found!",
+        });
+      }
+    }
+  );
+};
+
+export const getAllVideo = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  db.query("SELECT * FROM videos", (error, result) => {
+    if (error) {
+      return res.send("Something went wrong!");
+    } else {
+      const data = { status: res.statusCode, data: result };
+      return res.status(200).json(data);
+    }
+  });
+};
