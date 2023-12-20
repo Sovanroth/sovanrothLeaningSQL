@@ -1,7 +1,7 @@
 import express from "express";
 import db from "../config/db.config";
 import bycript from "bcrypt";
-
+import jwt from 'jsonwebtoken';
 
 export const createUser = async (
   req: express.Request,
@@ -70,53 +70,92 @@ export const createUser = async (
   });
 };
 
-export const Login = async (req: express.Request, res: express.Response) => {
-  const message: { email?: string; password?: string } = {};
+export const login = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  const message: { username?: string, password?: string } = {};
   const body = req.body as {
+    username: string;
     email: string;
     password: string;
   };
 
-  const { email, password } = body;
+  const { username, email } = body;
+  const password = body.password; // Don't hash the password for comparison
 
-  if (email == null || email == "") {
-    message.email = "Email is needed!";
+  if ((username == null || username === "") && (email == null || email === "")) {
+    message.username = "Please input username or email";
   }
 
-  if (password == null || password == "") {
-    message.password = "Password is needed!";
+  if (password == null || password === "") {
+    message.password = "Please input password";
   }
 
   if (Object.keys(message).length > 0) {
     res.status(401).json({
       error: true,
-      message: "Something went wrong!",
+      message: message,
     });
+    return;
   }
 
-  db.query("SELECT * FROM users WHERE email == ?", [email], (error, row) => {
+  // Check if the user exists in the database
+  const query = "SELECT * FROM `users` WHERE username = ? OR email = ?";
+  db.query(query, [username, email], (error, rows) => {
     if (error) {
       res.status(500).json({
         error: true,
-        message: "Something went wrong when fetching user!",
-      });
-      return;
-    }
-
-    if (row.length == 0) {
-      res.status(401).json({
-        error: true,
-        message: "Login Failed, User does not existed!",
+        message: "Something went wrong",
       });
     } else {
-      const user = row[0];
-      const userPassword = user.password;
-      const comparePassword = bycript.compareSync(password, userPassword);
-      if (comparePassword) {
+      if (rows.length === 0) {
+        res.status(404).json({
+          error: true,
+          message: "User not found",
+        });
+      } else {
+        const storedPassword = rows[0].password;
+
+        // Compare the provided password with the stored hashed password
+        bycript.compare(password, storedPassword, (err, result) => {
+          if (result) {
+            // Generate JWT token
+            const token = jwt.sign(
+              {
+                userId: rows[0].id,
+                username: rows[0].username,
+                email: rows[0].email,
+                role: rows[0].role,
+              },
+              'your-secret-key', // Replace with a secure secret key
+              { expiresIn: '1h' } // Token expiration time
+            );
+
+            const loginUser = {
+              username: rows[0].username,
+              email: rows[0].email,
+              role: rows[0].role,
+              token: token,
+            };
+
+            res.json({
+              error: false,
+              message: "Login successful",
+              user: loginUser,
+            });
+          } else {
+            res.status(403).json({
+              error: true,
+              message: "Invalid password",
+            });
+          }
+        });
       }
     }
   });
 };
+
 
 export const udpateUser = (req: express.Request, res: express.Response) => {
   const body = req.body as {
