@@ -1,7 +1,7 @@
 import express from "express";
 import db from "../config/db.config";
 import bycript from "bcrypt";
-import jwt from 'jsonwebtoken';
+import jwt from "jsonwebtoken";
 
 export const createUser = async (
   req: express.Request,
@@ -70,11 +70,8 @@ export const createUser = async (
   });
 };
 
-export const login = async (
-  req: express.Request,
-  res: express.Response
-) => {
-  const message: { username?: string, password?: string } = {};
+export const login = async (req: express.Request, res: express.Response) => {
+  const message: { username?: string; password?: string } = {};
   const body = req.body as {
     username: string;
     email: string;
@@ -84,7 +81,10 @@ export const login = async (
   const { username, email } = body;
   const password = body.password; // Don't hash the password for comparison
 
-  if ((username == null || username === "") && (email == null || email === "")) {
+  if (
+    (username == null || username === "") &&
+    (email == null || email === "")
+  ) {
     message.username = "Please input username or email";
   }
 
@@ -105,22 +105,20 @@ export const login = async (
   db.query(query, [username, email], (error, rows) => {
     if (error) {
       res.status(500).json({
-        error: true,
+        status: false,
         message: "Something went wrong",
       });
     } else {
       if (rows.length === 0) {
         res.status(404).json({
-          error: true,
+          status: false,
           message: "User not found",
         });
       } else {
         const storedPassword = rows[0].password;
 
-        // Compare the provided password with the stored hashed password
         bycript.compare(password, storedPassword, (err, result) => {
           if (result) {
-            // Generate JWT token
             const token = jwt.sign(
               {
                 userId: rows[0].id,
@@ -128,8 +126,8 @@ export const login = async (
                 email: rows[0].email,
                 role: rows[0].role,
               },
-              'your-secret-key', // Replace with a secure secret key
-              { expiresIn: '1h' } // Token expiration time
+              "SOVANROTHLEARNING",
+              { expiresIn: "7d" }
             );
 
             const loginUser = {
@@ -140,13 +138,13 @@ export const login = async (
             };
 
             res.json({
-              error: false,
+              status: true,
               message: "Login successful",
               user: loginUser,
             });
           } else {
             res.status(403).json({
-              error: true,
+              status: false,
               message: "Invalid password",
             });
           }
@@ -155,7 +153,6 @@ export const login = async (
     }
   });
 };
-
 
 export const udpateUser = (req: express.Request, res: express.Response) => {
   const body = req.body as {
@@ -172,17 +169,17 @@ export const udpateUser = (req: express.Request, res: express.Response) => {
     "UPDATE users SET username = ?, email = ?, password = ? WHERE user_id";
 
   db.query(sqlStatement, param, (error, row) => {
-    if(error) {
+    if (error) {
       return res.json({
         error: true,
-        message: "Something Went Wrong!"
-      })
+        message: "Something Went Wrong!",
+      });
     } else {
       return res.json({
         status: res.statusCode,
         message: "Updated Successfully",
         user: row,
-      })
+      });
     }
   });
 };
