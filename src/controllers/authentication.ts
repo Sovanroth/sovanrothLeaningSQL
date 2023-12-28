@@ -112,7 +112,7 @@ export const login = async (req: express.Request, res: express.Response) => {
       if (rows.length === 0) {
         res.status(404).json({
           status: false,
-          message: "User not found",
+          message: "Invalid credentials",
         });
       } else {
         const storedPassword = rows[0].password;
@@ -145,7 +145,7 @@ export const login = async (req: express.Request, res: express.Response) => {
           } else {
             res.status(403).json({
               status: false,
-              message: "Invalid password",
+              message: "Invalid credentials",
             });
           }
         });
@@ -154,31 +154,76 @@ export const login = async (req: express.Request, res: express.Response) => {
   });
 };
 
-export const udpateUser = (req: express.Request, res: express.Response) => {
+export const updateUser = (req: express.Request, res: express.Response) => {
   const body = req.body as {
-    email: string;
-    password: string;
-    username: string;
+    email?: string;
+    password?: string;
+    username?: string;
+    role?: string;
   };
 
-  const { email, username } = body;
-  const password = bycript.hashSync(body.password, 10);
-  const param = [body.email, body.password, body.username];
+  const { email, username, role } = body;
+  const userId = req.params.userId;
+  const params: any[] = [];
+  let updateFields: string[] = [];
 
-  const sqlStatement =
-    "UPDATE users SET username = ?, email = ?, password = ? WHERE user_id";
+  if (username !== undefined) {
+    updateFields.push("username = ?");
+    params.push(username);
+  }
 
-  db.query(sqlStatement, param, (error, row) => {
+  if (email !== undefined) {
+    updateFields.push("email = ?");
+    params.push(email);
+  }
+
+  if (body.password) {
+    const password = bycript.hashSync(body.password, 10);
+    updateFields.push("password = ?");
+    params.push(password);
+  }
+
+  if (role !== undefined) {
+    updateFields.push("role = ?");
+    params.push(role);
+  }
+
+  params.push(userId);
+
+  if (updateFields.length === 0) {
+    return res.status(400).json({
+      error: true,
+      message: "No valid fields provided for update",
+    });
+  }
+
+  const sqlStatement = `UPDATE users SET ${updateFields.join(
+    ", "
+  )} WHERE user_id = ?`;
+
+  db.query(sqlStatement, params, (error, _row) => {
     if (error) {
-      return res.json({
+      return res.status(500).json({
         error: true,
         message: "Something Went Wrong!",
       });
     } else {
-      return res.json({
-        status: res.statusCode,
-        message: "Updated Successfully",
-        user: row,
+      // Fetch the updated user data from the database
+      const selectUserSql = "SELECT * FROM users WHERE user_id = ?";
+      db.query(selectUserSql, [userId], (selectError, rows) => {
+        if (selectError) {
+          return res.status(500).json({
+            error: true,
+            message: "Error fetching updated user data",
+          });
+        } else {
+          const updatedUser = rows[0];
+          return res.json({
+            status: res.statusCode,
+            message: "Updated Successfully",
+            user: updatedUser,
+          });
+        }
       });
     }
   });
